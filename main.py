@@ -1,41 +1,108 @@
+from click import command
 import requests
 import json
 import config
+import static_responses
+import sqlite3 as sl
+import sql
+from db_ops import *
 from pprint import pprint
 from flask import Flask, request, session
 from twilio.rest import Client
 from twilio.twiml.messaging_response import MessagingResponse
 
+# app config
 app = Flask(__name__)
 app.config.from_object(config.Appsettings)
 app.config.from_file("appsettings.json", load=json.load)
 
-gpt3ChatbotConfig = config.Gpt3Config(
+gpt3_chatbot_config = config.Gpt3Config(
     app.config.get("GPT3_URL"),
     app.config.get("GPT3_AUTH_KEY")
 )
 
+# db config
+query_execute(db_connect(), sql.create_user_table)
+
 @app.route("/api/chatbot", methods=['POST'])
 def sms_reply():
-    personalities = get_personalities()
+    raw_body = request.form['Body']
+    raw_from = request.form["From"]
 
-    request_body = request.form['Body']
-    request_from = request.form["From"]
+    # error handling
+    if raw_body and raw_body.isspace():
+        return get_help_response()
 
-    bot_response = requests.post(
-        gpt3ChatbotConfig.url + "/api/chat", 
+    # get user from db
+    conn = db_connect()
+    rows = query_execute(conn, sql.check_for_user, [raw_from])
+
+    if len(rows) == 0:
+        query_execute(conn, sql.insert_new_user, [raw_from, ""])
+        return get_help_response()
+    
+    split_body = raw_body.split(" ", 1)
+
+    # check for commands
+    command = split_body[0]
+    
+    if command == "/help":
+        return get_help_response()
+
+    if command == "/personalities":
+        return get_personalities_response()
+
+    # determine prompt
+    prompt = ""
+    personality = ""
+    if is
+
+    # add existing messages to prompt
+
+
+    # get response from gpt3
+    gpt3_response = requests.post(
+        gpt3_chatbot_config.url + "/api/chat",
+        params= {
+            "prompt": prompt,
+            "personality": personality
+        },
         headers={
-            "Authorization":gpt3ChatbotConfig.auth_key
+            "Authorization":gpt3_chatbot_config.auth_key
         }
     )
 
     resp = MessagingResponse()
-    resp.message("PANIK: " + request_body)
+    resp.message(gpt3_response)
 
     return str(resp)
 
+def is_personality_present(chunk: str):
+    return chunk[-4] == "-bot"
+
+def is_personality_valid(personality: str, personalities: list):
+    return personality in personalities
+
+def get_help_response():
+    return wrap_in_twiml(static_responses.help)
+
 def get_personalities():
-    return requests.get(gpt3ChatbotConfig.url + "/api/personalities")
+    raw_response = requests.get(gpt3_chatbot_config.url + "/api/personalities")
+    response = json.loads(raw_response.content)
+    return response
+
+def get_personalities_response():
+    personalities = get_personalities()
+    p_ids = [p['id'] for p in personalities]
+
+    response = static_responses.personalities_prefix + ", ".join(p_ids) + "!"
+
+    return wrap_in_twiml(response)
+
+def wrap_in_twiml(response: str):
+    resp = MessagingResponse()
+    resp.message(response)
+    return str(resp)
 
 
 if __name__ == "__main__":

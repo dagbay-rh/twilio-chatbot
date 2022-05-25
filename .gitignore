@@ -1,3 +1,5 @@
 *.env
 *pycache*
 samples/*
+chatbot.db
+*.sql
