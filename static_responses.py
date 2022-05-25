@@ -7,3 +7,5 @@ help = "Welcome to Everybotty! \
     Examples: 'lonely-bot I'm so alone :(', 'How are you today?'"
 
 personalities_prefix = "The available personalities are: "
+
+missing_prompt_error = "Error: missing prompt. See '/help' for example usages."

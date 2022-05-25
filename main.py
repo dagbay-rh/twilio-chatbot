@@ -1,10 +1,10 @@
-from click import command
 import requests
 import json
 import config
 import static_responses
 import sqlite3 as sl
 import sql
+import random
 from db_ops import *
 from pprint import pprint
 from flask import Flask, request, session
@@ -52,13 +52,21 @@ def sms_reply():
     if command == "/personalities":
         return get_personalities_response()
 
-    # determine prompt
+    # determine personality and prompt
     prompt = ""
     personality = ""
-    if is
+    
+    if is_personality_present(command):
+        personality = command
+        if len(split_body) == 1 or split_body[1].isspace():
+            return wrap_in_twiml(static_responses.missing_prompt_error), 400
+        prompt = split_body[1]
+    
+    else:
+        personality = get_random_personality()
+        prompt = command
 
     # add existing messages to prompt
-
 
     # get response from gpt3
     gpt3_response = requests.post(
@@ -72,10 +80,7 @@ def sms_reply():
         }
     )
 
-    resp = MessagingResponse()
-    resp.message(gpt3_response)
-
-    return str(resp)
+    return wrap_in_twiml(json.loads(gpt3_response.content)["response"]), 200
 
 def is_personality_present(chunk: str):
     return chunk[-4] == "-bot"
@@ -98,6 +103,12 @@ def get_personalities_response():
     response = static_responses.personalities_prefix + ", ".join(p_ids) + "!"
 
     return wrap_in_twiml(response)
+
+def get_random_personality():
+    personalities = get_personalities()
+    p_ids = [p['id'] for p in personalities]
+
+    return random.choice(p_ids)
 
 def wrap_in_twiml(response: str):
     resp = MessagingResponse()
