@@ -83,7 +83,7 @@ def sms_reply():
     return wrap_in_twiml(json.loads(gpt3_response.content)["response"]), 200
 
 def is_personality_present(chunk: str):
-    return len(chunk > 4) and chunk[-4] == "-bot"
+    return len(chunk) > 4 and chunk[-4] == "-bot"
 
 def is_personality_valid(personality: str, personalities: list):
     return personality in personalities
