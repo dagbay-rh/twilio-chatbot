@@ -15,16 +15,6 @@ def sms_reply():
     resp.message("PANIK: " + query)
 
     return str(resp)
-    # account_sid = os.environ['TWILIO_ACCOUNT_SID']
-    # auth_token = os.environ['TWILIO_AUTH_TOKEN']
-
-    # client = Client(account_sid, auth_token)
-
-    # message = client.messages.create(
-    #     body='Smells like upgamers in here',
-    #     from_='+19378074692',
-    #     to='+12487528167'
-    # )
 
 if __name__ == "__main__":
     app.run(debug=True)
