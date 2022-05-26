@@ -66,10 +66,8 @@ def sms_reply():
 
     ### chat
     personality = rows[0][1]
-
-
     if not personality or str(personality).isspace():
-        personality = get_random_personality(personalities)
+        personality = get_random_personality()
 
     prompt = raw_body
 
@@ -94,8 +92,8 @@ def get_personalities_response() -> str:
     response = static_responses.personalities_prefix + ", ".join(personalities) + "!"
     return wrap_in_twiml(response)
 
-def get_random_personality(personalities: list) -> str:
-    return random.choice(personalities)
+def get_random_personality() -> str:
+    return random.choice(get_personalities())
 
 def get_gpt_response(prompt: str, personality: str) -> str:
     gpt3_response = requests.post(
