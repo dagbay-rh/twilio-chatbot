@@ -1,9 +1,9 @@
-help = "Welcome to Everybotty! \
-    If you would like to chat with a bot, select a personality or send a prompt. \
-    Reply /help to see this message, or /personalities to see available personalities. \n\
-    To chat with a personality use the following format: <personality> <message>.\n \
-    To chat with a random personality use the following format: <message>. \n\
-    Examples: 'lonely-bot I'm so alone :(', 'How are you today?'"
+help = """
+    Welcome to Everybotty! If you would like to chat with a bot, select a personality or send a message.\n\n
+    Available commands: /help to see this message, /personalities to see available personalities, /personality <...> to set a personality.\n\n
+    If you start chatting without selecting a personality, a random one will be chosen for you!\n\n
+    Example messages: '/help', '/personality lonely-bot', 'How are you today?'
+"""
 
 personalities_prefix = "The available personalities are: "
 
