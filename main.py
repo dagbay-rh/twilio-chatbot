@@ -65,16 +65,17 @@ def sms_reply():
         return wrap_in_twiml(static_responses.set_personality_success), 200
 
     ### chat
+
+    # set random personality if not set
     personality = rows[0][1]
     if not personality or str(personality).isspace():
         personality = get_random_personality()
-
-    prompt = raw_body
+        query_execute(conn, sql.update_user_personality, [personality, rows[0][0]])
 
     # add existing messages to prompt
 
     # get response from gpt3
-    return get_gpt_response(prompt, personality), 200
+    return get_gpt_response(raw_body, personality), 200
 
 def is_personality_valid(personality: str) -> bool:
     return personality in get_personalities()
