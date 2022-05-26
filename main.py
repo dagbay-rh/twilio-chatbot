@@ -51,6 +51,12 @@ def sms_reply():
 
     if command == "/personalities":
         return get_personalities_response()
+
+    if command == "/show":
+        personality = rows[0][1]
+        if not personality or str(personality).isspace():
+            personality = "...nothing ¯\_(ツ)_/¯ use /personality to set one!"
+        return wrap_in_twiml(static_responses.show_personality_prefix + personality), 200
     
     if command == "/personality":
         if len(split_body) == 1:
@@ -73,6 +79,7 @@ def sms_reply():
         query_execute(conn, sql.update_user_personality, [personality, rows[0][0]])
 
     # add existing messages to prompt
+    # TODO
 
     # get response from gpt3
     return get_gpt_response(raw_body, personality), 200

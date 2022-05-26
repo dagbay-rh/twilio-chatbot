@@ -13,3 +13,5 @@ supply_personality_error = "Error: must supply a personality to use when invokin
     See '/personalities' for a list of valid options."
 
 set_personality_success = "Successfully set personality! Start chatting!"
+
+show_personality_prefix = "Your set personality is: "
