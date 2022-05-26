@@ -97,7 +97,7 @@ def sms_reply():
     return wrap_in_twiml(gpt_response), 200
 
 def is_personality_valid(personality: str) -> bool:
-    return personality in get_personalities()
+    return personality.strip() in get_personalities()
 
 def get_help_response() -> str:
     return wrap_in_twiml(static_responses.help)
