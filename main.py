@@ -69,6 +69,7 @@ def sms_reply():
             return wrap_in_twiml(static_responses.invalid_personality_error), 400
 
         query_execute(conn, sql.update_user_personality, [personality, phone_number])
+        query_execute(conn, sql.update_user_last_message, ["", phone_number])
         return wrap_in_twiml(static_responses.set_personality_success), 200
 
     ### chat
