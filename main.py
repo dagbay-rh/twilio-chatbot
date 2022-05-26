@@ -28,7 +28,7 @@ def sms_reply():
     raw_body = request.form['Body']
     raw_from = request.form["From"]
 
-    # error handling
+    ### error handling
     if raw_body and raw_body.isspace():
         return get_help_response()
 
@@ -36,13 +36,14 @@ def sms_reply():
     conn = db_connect()
     rows = query_execute(conn, sql.check_for_user, [raw_from])
 
+    # new user
     if len(rows) == 0:
-        query_execute(conn, sql.insert_new_user, [raw_from, ""])
+        query_execute(conn, sql.insert_new_user, [raw_from, None, None])
         return get_help_response()
-    
+
     split_body = raw_body.split(" ", 1)
 
-    # check for commands
+    ### commands
     command = split_body[0]
     
     if command == "/help":
@@ -50,37 +51,35 @@ def sms_reply():
 
     if command == "/personalities":
         return get_personalities_response()
-
-    # determine personality and prompt
-    prompt = ""
-    personality = ""
-    personalities = get_personalities()
     
-    if is_personality_present(command):
-        personality = command
+    if command == "/personality":
+        if len(split_body) == 1:
+            return wrap_in_twiml(static_responses.supply_personality_error), 400
         
-        if not is_personality_valid(personality, personalities):
+        personality = split_body[1]
+        
+        if not is_personality_valid(personality):
             return wrap_in_twiml(static_responses.invalid_personality_error), 400
-        
-        if len(split_body) == 1 or split_body[1].isspace():
-            return wrap_in_twiml(static_responses.missing_prompt_error), 400
-        
-        prompt = split_body[1]
-    
-    else:
+
+        query_execute(conn, sql.update_user_personality, [personality, rows[0][0]])
+        return wrap_in_twiml(static_responses.set_personality_success), 200
+
+    ### chat
+    personality = rows[0][1]
+
+
+    if not personality or str(personality).isspace():
         personality = get_random_personality(personalities)
-        prompt = command
+
+    prompt = raw_body
 
     # add existing messages to prompt
 
     # get response from gpt3
     return get_gpt_response(prompt, personality), 200
 
-def is_personality_present(chunk: str) -> bool:
-    return len(chunk) > 4 and chunk[-4:] == "-bot"
-
-def is_personality_valid(personality: str, personalities: list) -> bool:
-    return personality in personalities
+def is_personality_valid(personality: str) -> bool:
+    return personality in get_personalities()
 
 def get_help_response() -> str:
     return wrap_in_twiml(static_responses.help)
