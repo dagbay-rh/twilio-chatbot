@@ -61,12 +61,12 @@ def sms_reply():
     
     if command == "/personality":
         if len(split_body) == 1:
-            return wrap_in_twiml(static_responses.supply_personality_error), 400
+            return wrap_in_twiml(static_responses.supply_personality_error), 200
         
         personality = split_body[1]
         
         if not is_personality_valid(personality):
-            return wrap_in_twiml(static_responses.invalid_personality_error), 400
+            return wrap_in_twiml(static_responses.invalid_personality_error), 200
 
         query_execute(conn, sql.update_user_personality, [personality, phone_number])
         query_execute(conn, sql.update_user_last_message, ["", phone_number])
