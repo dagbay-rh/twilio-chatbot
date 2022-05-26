@@ -2,12 +2,11 @@ import requests
 import json
 import config
 import static_responses
-import sqlite3 as sl
 import sql
 import random
 from db_ops import *
 from pprint import pprint
-from flask import Flask, request, session
+from flask import Flask, request
 from twilio.rest import Client
 from twilio.twiml.messaging_response import MessagingResponse
 
@@ -55,20 +54,51 @@ def sms_reply():
     # determine personality and prompt
     prompt = ""
     personality = ""
+    personalities = get_personalities()
     
     if is_personality_present(command):
         personality = command
+        
+        if not is_personality_valid(personality, personalities):
+            return wrap_in_twiml(static_responses.invalid_personality_error), 400
+        
         if len(split_body) == 1 or split_body[1].isspace():
             return wrap_in_twiml(static_responses.missing_prompt_error), 400
+        
         prompt = split_body[1]
     
     else:
-        personality = get_random_personality()
+        personality = get_random_personality(personalities)
         prompt = command
 
     # add existing messages to prompt
 
     # get response from gpt3
+    return get_gpt_response(prompt, personality), 200
+
+def is_personality_present(chunk: str) -> bool:
+    return len(chunk) > 4 and chunk[-4:] == "-bot"
+
+def is_personality_valid(personality: str, personalities: list) -> bool:
+    return personality in personalities
+
+def get_help_response() -> str:
+    return wrap_in_twiml(static_responses.help)
+
+def get_personalities() -> list:
+    raw_response = requests.get(gpt3_chatbot_config.url + "/api/personalities")
+    response = json.loads(raw_response.content)
+    return [p['id'] for p in response]
+
+def get_personalities_response() -> str:
+    personalities = get_personalities()
+    response = static_responses.personalities_prefix + ", ".join(personalities) + "!"
+    return wrap_in_twiml(response)
+
+def get_random_personality(personalities: list) -> str:
+    return random.choice(personalities)
+
+def get_gpt_response(prompt: str, personality: str) -> str:
     gpt3_response = requests.post(
         gpt3_chatbot_config.url + "/api/chat",
         params= {
@@ -79,38 +109,10 @@ def sms_reply():
             "Authorization":gpt3_chatbot_config.auth_key
         }
     )
-
-    return wrap_in_twiml(json.loads(gpt3_response.content)["response"]), 200
-
-def is_personality_present(chunk: str):
-    return len(chunk) > 4 and chunk[-4] == "-bot"
-
-def is_personality_valid(personality: str, personalities: list):
-    return personality in personalities
-
-def get_help_response():
-    return wrap_in_twiml(static_responses.help)
-
-def get_personalities():
-    raw_response = requests.get(gpt3_chatbot_config.url + "/api/personalities")
-    response = json.loads(raw_response.content)
-    return response
-
-def get_personalities_response():
-    personalities = get_personalities()
-    p_ids = [p['id'] for p in personalities]
-
-    response = static_responses.personalities_prefix + ", ".join(p_ids) + "!"
-
+    response = json.loads(gpt3_response.content)["response"]
     return wrap_in_twiml(response)
 
-def get_random_personality():
-    personalities = get_personalities()
-    p_ids = [p['id'] for p in personalities]
-
-    return random.choice(p_ids)
-
-def wrap_in_twiml(response: str):
+def wrap_in_twiml(response: str) -> str:
     resp = MessagingResponse()
     resp.message(response)
     return str(resp)

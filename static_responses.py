@@ -8,3 +8,5 @@ help = "Welcome to Everybotty! \
 personalities_prefix = "The available personalities are: "
 
 missing_prompt_error = "Error: missing prompt. See '/help' for example usages."
+
+invalid_personality_error = "Error: invalid personality. See '/personalities' for a list of valid options." 
