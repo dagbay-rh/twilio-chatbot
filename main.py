@@ -42,6 +42,7 @@ def sms_reply():
         return get_help_response()
 
     split_body = raw_body.split(" ", 1)
+    phone_number = rows[0][0]
 
     ### commands
     command = split_body[0]
@@ -67,7 +68,7 @@ def sms_reply():
         if not is_personality_valid(personality):
             return wrap_in_twiml(static_responses.invalid_personality_error), 400
 
-        query_execute(conn, sql.update_user_personality, [personality, rows[0][0]])
+        query_execute(conn, sql.update_user_personality, [personality, phone_number])
         return wrap_in_twiml(static_responses.set_personality_success), 200
 
     ### chat
@@ -76,13 +77,23 @@ def sms_reply():
     personality = rows[0][1]
     if not personality or str(personality).isspace():
         personality = get_random_personality()
-        query_execute(conn, sql.update_user_personality, [personality, rows[0][0]])
+        query_execute(conn, sql.update_user_personality, [personality, phone_number])
 
+    prompt = "Input: " + raw_body
+    
     # add existing messages to prompt
-    # TODO
+    last_message = rows[0][2]
+    if last_message and not str(last_message).isspace():
+        prompt = last_message + "\n" + prompt
 
     # get response from gpt3
-    return get_gpt_response(raw_body, personality), 200
+    gpt_response = get_gpt_output(prompt, personality)
+
+    # update last message
+    new_last_message = prompt + "\n" + "Output: " + gpt_response
+    query_execute(conn, sql.update_user_last_message, [new_last_message, phone_number])
+
+    return wrap_in_twiml(gpt_response), 200
 
 def is_personality_valid(personality: str) -> bool:
     return personality in get_personalities()
@@ -103,7 +114,7 @@ def get_personalities_response() -> str:
 def get_random_personality() -> str:
     return random.choice(get_personalities())
 
-def get_gpt_response(prompt: str, personality: str) -> str:
+def get_gpt_output(prompt: str, personality: str) -> str:
     gpt3_response = requests.post(
         gpt3_chatbot_config.url + "/api/chat",
         params= {
@@ -115,6 +126,9 @@ def get_gpt_response(prompt: str, personality: str) -> str:
         }
     )
     response = json.loads(gpt3_response.content)["response"]
+    return response
+
+def get_chat_response(response: str) -> str:
     return wrap_in_twiml(response)
 
 def wrap_in_twiml(response: str) -> str:
